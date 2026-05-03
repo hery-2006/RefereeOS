@@ -69,7 +69,7 @@ export default function App() {
     <main className="app-shell">
       <header className="topbar">
         <div>
-          <p className="eyebrow">AG2 + Daytona Hackathon</p>
+          <p className="eyebrow">AG2 + Daytona Review Operations</p>
           <h1>RefereeOS</h1>
         </div>
         <div className="sponsor-strip" aria-label="Sponsor integration status">

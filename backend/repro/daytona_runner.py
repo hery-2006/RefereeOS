@@ -38,20 +38,28 @@ class DaytonaOpenAIReproRunner:
         try:
             return self._run_in_daytona(payload)
         except Exception as exc:
-            if not self.allow_local_fallback:
+            if payload.get("custom_artifact") or not self.allow_local_fallback:
                 return self._inconclusive_receipt(payload, f"Daytona run failed and fallback is disabled: {exc}")
             return self._run_local_fallback(payload, str(exc))
 
     def _build_payload(self, fixture_meta: dict[str, Any], paper: dict[str, Any]) -> dict[str, Any]:
-        results_path = Path(fixture_meta["results_path"])
-        script_path = Path(__file__).resolve().parents[1] / "fixtures" / "reproduce_metric.py"
+        results_text = fixture_meta.get("results_csv_text")
+        script_text = fixture_meta.get("metric_script_text")
+        if results_text is None:
+            results_path = Path(fixture_meta["results_path"])
+            results_text = results_path.read_text(encoding="utf-8") if results_path.exists() else ""
+        if script_text is None:
+            script_path = Path(__file__).resolve().parents[1] / "fixtures" / "reproduce_metric.py"
+            script_text = script_path.read_text(encoding="utf-8")
+
         return {
             "fixture_id": fixture_meta.get("fixture_id", "uploaded"),
             "paper_title": paper.get("title"),
             "paper_summary": paper.get("abstract"),
             "reported_result": fixture_meta.get("reported_result"),
-            "results_csv": results_path.read_text(encoding="utf-8") if results_path.exists() else "",
-            "metric_script": script_path.read_text(encoding="utf-8"),
+            "results_csv": results_text,
+            "metric_script": script_text,
+            "custom_artifact": bool(fixture_meta.get("custom_artifact")),
             "llm_provider": "OpenAI",
             "llm_model": self.openai_model,
             "openai_api_key": _openai_key_for_daytona(),
@@ -170,7 +178,7 @@ def _sandbox_code(payload: dict[str, Any]) -> str:
             check=False,
         )
 
-        metric_match = re.search(r"macro_f1=([0-9.]+)", completed.stdout)
+        metric_match = re.search(r"(?:macro_f1|metric|observed_result)\\s*=\\s*([0-9.]+)", completed.stdout, flags=re.I)
         observed = float(metric_match.group(1)) if metric_match else None
         reported = float(payload.get("reported_result") or 0)
         if observed is None:

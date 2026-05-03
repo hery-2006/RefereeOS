@@ -13,6 +13,9 @@ export default function App() {
   const [fixtureId, setFixtureId] = useState("clean");
   const [fieldDomain, setFieldDomain] = useState("");
   const [file, setFile] = useState<File | null>(null);
+  const [artifactFile, setArtifactFile] = useState<File | null>(null);
+  const [scriptFile, setScriptFile] = useState<File | null>(null);
+  const [reportedResult, setReportedResult] = useState("");
   const [run, setRun] = useState<RunResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,6 +47,9 @@ export default function App() {
     form.set("fixture_id", fixtureId);
     if (fieldDomain) form.set("field_domain", fieldDomain);
     if (file) form.set("file", file);
+    if (artifactFile) form.set("artifact_file", artifactFile);
+    if (scriptFile) form.set("script_file", scriptFile);
+    if (reportedResult) form.set("reported_result", reportedResult);
 
     try {
       const response = await fetch(`${API_BASE}/api/analyze`, {
@@ -85,10 +91,16 @@ export default function App() {
           fixtureId={fixtureId}
           fieldDomain={fieldDomain}
           file={file}
+          artifactFile={artifactFile}
+          scriptFile={scriptFile}
+          reportedResult={reportedResult}
           loading={loading}
           onFixtureChange={setFixtureId}
           onFieldDomainChange={setFieldDomain}
           onFileChange={setFile}
+          onArtifactFileChange={setArtifactFile}
+          onScriptFileChange={setScriptFile}
+          onReportedResultChange={setReportedResult}
           onAnalyze={analyze}
         />
         <div className="run-summary">

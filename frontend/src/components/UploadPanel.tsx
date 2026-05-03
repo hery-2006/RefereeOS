@@ -6,10 +6,16 @@ type Props = {
   fixtureId: string;
   fieldDomain: string;
   file: File | null;
+  artifactFile: File | null;
+  scriptFile: File | null;
+  reportedResult: string;
   loading: boolean;
   onFixtureChange: (value: string) => void;
   onFieldDomainChange: (value: string) => void;
   onFileChange: (value: File | null) => void;
+  onArtifactFileChange: (value: File | null) => void;
+  onScriptFileChange: (value: File | null) => void;
+  onReportedResultChange: (value: string) => void;
   onAnalyze: () => void;
 };
 
@@ -27,10 +33,16 @@ export default function UploadPanel({
   fixtureId,
   fieldDomain,
   file,
+  artifactFile,
+  scriptFile,
+  reportedResult,
   loading,
   onFixtureChange,
   onFieldDomainChange,
   onFileChange,
+  onArtifactFileChange,
+  onScriptFileChange,
+  onReportedResultChange,
   onAnalyze,
 }: Props) {
   return (
@@ -59,11 +71,34 @@ export default function UploadPanel({
 
       <label className="file-input">
         <FileUp size={16} />
-        <span>{file?.name ?? "PDF / text"}</span>
+        <span>{file?.name ?? "Manuscript"}</span>
         <input
           type="file"
           accept=".pdf,.txt,.md"
           onChange={(event) => onFileChange(event.target.files?.[0] ?? null)}
+        />
+      </label>
+
+      <label className="file-input">
+        <FileUp size={16} />
+        <span>{artifactFile?.name ?? "Artifact CSV"}</span>
+        <input type="file" accept=".csv,.txt" onChange={(event) => onArtifactFileChange(event.target.files?.[0] ?? null)} />
+      </label>
+
+      <label className="file-input">
+        <FileUp size={16} />
+        <span>{scriptFile?.name ?? "Metric script"}</span>
+        <input type="file" accept=".py" onChange={(event) => onScriptFileChange(event.target.files?.[0] ?? null)} />
+      </label>
+
+      <label>
+        Reported
+        <input
+          className="number-input"
+          inputMode="decimal"
+          placeholder="0.87"
+          value={reportedResult}
+          onChange={(event) => onReportedResultChange(event.target.value)}
         />
       </label>
 

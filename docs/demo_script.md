@@ -12,6 +12,8 @@ The Daytona sandbox runs the artifact and OpenAI GPT-5.5 interprets the reproduc
 
 Switch to the suspicious fixture. The evidence board now flags an embedded prompt-injection instruction and a metric mismatch.
 
+Alternate path: upload the manuscript, CSV artifact, metric script, and reported value directly. This produces the same Daytona receipt without relying on the fixture selector.
+
 Close: RefereeOS routes scarce human expertise to the papers and claims that need attention most.
 
 ## Five Minutes

@@ -125,7 +125,7 @@ h3 {
 
 .intake-panel {
   display: grid;
-  grid-template-columns: minmax(150px, 1fr) minmax(150px, 1fr) minmax(140px, 0.9fr) auto;
+  grid-template-columns: repeat(4, minmax(126px, 1fr));
   gap: 10px;
   align-items: end;
   padding: 12px;
@@ -141,6 +141,16 @@ label {
 }
 
 select {
+  width: 100%;
+  height: 40px;
+  border: 1px solid #c8d1da;
+  border-radius: 8px;
+  background: #f8fafb;
+  color: #1f2933;
+  padding: 0 10px;
+}
+
+.number-input {
   width: 100%;
   height: 40px;
   border: 1px solid #c8d1da;

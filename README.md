@@ -79,6 +79,25 @@ Open `http://127.0.0.1:5173`.
 3. Select **Suspicious/adversarial paper** and run review.
 4. Show prompt-injection finding and failed/inconclusive reproducibility result.
 
+## Custom Reproducibility Path
+
+To avoid a fixture-only demo, upload:
+
+- a manuscript: `.pdf`, `.md`, or `.txt`
+- an artifact CSV
+- a Python metric script
+- the reported metric value
+
+The metric script runs inside Daytona and should print one of these patterns:
+
+```txt
+macro_f1=0.87
+metric=0.87
+observed_result=0.87
+```
+
+For custom uploaded scripts, RefereeOS does not run a local fallback. If Daytona fails, the receipt is marked inconclusive instead of executing arbitrary uploaded code locally.
+
 ## API
 
 - `POST /api/analyze`

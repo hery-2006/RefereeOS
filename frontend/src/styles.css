@@ -33,6 +33,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
+  overflow-x: hidden;
   background:
     linear-gradient(118deg, transparent 0 18%, rgba(25, 76, 58, 0.14) 18% 38%, transparent 38% 100%),
     linear-gradient(90deg, rgba(23, 32, 29, 0.04) 1px, transparent 1px),
@@ -174,6 +175,7 @@ h3 {
   justify-content: center;
   gap: 8px;
   min-height: 40px;
+  min-width: 0;
   border-radius: 6px;
   white-space: nowrap;
 }
@@ -193,9 +195,13 @@ h3 {
 
 .command-band {
   display: grid;
-  grid-template-columns: minmax(280px, 1fr) minmax(320px, 1.35fr);
+  grid-template-columns: minmax(0, 1.2fr) minmax(360px, 0.8fr);
   gap: 14px;
   margin-bottom: 14px;
+}
+
+.command-band > * {
+  min-width: 0;
 }
 
 .intake-panel,
@@ -213,7 +219,7 @@ h3 {
 
 .intake-panel {
   display: grid;
-  grid-template-columns: repeat(4, minmax(126px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
   gap: 10px;
   align-items: end;
   padding: 12px;
@@ -225,6 +231,7 @@ h3 {
 label {
   display: grid;
   gap: 6px;
+  min-width: 0;
   color: #4e5f55;
   font-size: 0.76rem;
   font-weight: 800;
@@ -233,6 +240,7 @@ label {
 
 select {
   width: 100%;
+  min-width: 0;
   height: 40px;
   border: 1px solid #b9c1b8;
   border-radius: 6px;
@@ -246,6 +254,7 @@ select {
 
 .number-input {
   width: 100%;
+  min-width: 0;
   height: 40px;
   border: 1px solid #b9c1b8;
   border-radius: 6px;
@@ -269,6 +278,17 @@ select {
   text-transform: none;
   box-shadow: inset 0 1px 0 rgba(255, 253, 247, 0.85);
   backdrop-filter: blur(12px) saturate(1.04);
+}
+
+.file-input span,
+select {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.file-input span {
+  display: block;
+  min-width: 0;
 }
 
 .file-input input {
@@ -309,6 +329,7 @@ select {
 
 .secondary-action {
   height: 40px;
+  width: 100%;
   background:
     linear-gradient(180deg, rgba(255, 253, 247, 0.08), transparent),
     rgba(23, 32, 29, 0.9);
@@ -361,7 +382,7 @@ button:disabled {
 
 .run-summary {
   display: grid;
-  grid-template-columns: repeat(4, minmax(92px, 1fr)) auto;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
   align-items: center;
   padding: 12px;
@@ -372,6 +393,7 @@ button:disabled {
 }
 
 .run-summary > div {
+  min-width: 0;
   min-height: 48px;
 }
 
@@ -379,6 +401,11 @@ button:disabled {
   display: block;
   overflow-wrap: anywhere;
   font-size: 0.96rem;
+}
+
+.run-summary .primary-action {
+  grid-column: 1 / -1;
+  width: 100%;
 }
 
 .error-banner {
@@ -394,9 +421,13 @@ button:disabled {
 
 .workspace-grid {
   display: grid;
-  grid-template-columns: minmax(260px, 0.75fr) minmax(440px, 1.45fr) minmax(320px, 1fr);
+  grid-template-columns: minmax(240px, 0.75fr) minmax(0, 1.45fr) minmax(280px, 1fr);
   gap: 14px;
   align-items: start;
+}
+
+.workspace-grid > * {
+  min-width: 0;
 }
 
 .panel {
@@ -645,10 +676,37 @@ button:disabled {
   overflow-wrap: anywhere;
 }
 
-@media (max-width: 1180px) {
-  .command-band,
-  .workspace-grid {
+@media (min-width: 1500px) {
+  .run-summary {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(136px, auto);
+  }
+
+  .run-summary .primary-action {
+    grid-column: auto;
+    width: auto;
+  }
+}
+
+@media (max-width: 1320px) {
+  .command-band {
     grid-template-columns: 1fr;
+  }
+
+  .workspace-grid {
+    grid-template-columns: minmax(260px, 0.75fr) minmax(0, 1.45fr);
+  }
+
+  .run-summary {
+    grid-template-columns: repeat(4, minmax(0, 1fr)) minmax(136px, auto);
+  }
+
+  .run-summary .primary-action {
+    grid-column: auto;
+    width: auto;
+  }
+
+  .packet-panel {
+    grid-column: 1 / -1;
   }
 
   .panel {
@@ -656,7 +714,13 @@ button:disabled {
   }
 
   .packet-panel pre {
-    height: 460px;
+    height: 420px;
+  }
+}
+
+@media (max-width: 920px) {
+  .workspace-grid {
+    grid-template-columns: 1fr;
   }
 }
 

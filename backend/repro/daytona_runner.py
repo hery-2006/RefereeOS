@@ -154,6 +154,7 @@ def _sandbox_code(payload: dict[str, Any]) -> str:
         import re
         import subprocess
         import sys
+        import urllib.error
         import urllib.request
         from pathlib import Path
 
@@ -200,26 +201,56 @@ def _sandbox_code(payload: dict[str, Any]) -> str:
                     "human_followup": "Confirm sponsor Gemini environment variables are mounted for live judging."
                 }}
 
-            body = {{
-                "contents": [{{"parts": [{{"text": prompt}}]}}],
-                "generationConfig": {{"responseMimeType": "application/json"}}
-            }}
-            request = urllib.request.Request(
-                f"https://generativelanguage.googleapis.com/v1beta/models/{{model}}:generateContent?key={{api_key}}",
-                data=json.dumps(body).encode("utf-8"),
-                headers={{"Content-Type": "application/json"}},
-                method="POST",
-            )
-            try:
-                with urllib.request.urlopen(request, timeout=35) as response:
-                    response_json = json.loads(response.read().decode("utf-8"))
+            def parse_text(text: str) -> dict:
+                try:
+                    return json.loads(text)
+                except Exception:
+                    start = text.find("{{")
+                    end = text.rfind("}}")
+                    if start >= 0 and end > start:
+                        return json.loads(text[start : end + 1])
+                    return {{
+                        "interpretation": text[:700],
+                        "human_followup": "Human reviewer should inspect the artifact receipt."
+                    }}
+
+            def call(body: dict) -> dict:
+                request = urllib.request.Request(
+                    f"https://generativelanguage.googleapis.com/v1beta/models/{{model}}:generateContent?key={{api_key}}",
+                    data=json.dumps(body).encode("utf-8"),
+                    headers={{"Content-Type": "application/json"}},
+                    method="POST",
+                )
+                try:
+                    with urllib.request.urlopen(request, timeout=35) as response:
+                        response_json = json.loads(response.read().decode("utf-8"))
+                except urllib.error.HTTPError as exc:
+                    detail = exc.read().decode("utf-8", errors="replace")[:900]
+                    raise RuntimeError(f"HTTP {{exc.code}}: {{detail}}") from exc
+
                 text = response_json["candidates"][0]["content"]["parts"][0]["text"]
-                return json.loads(text)
-            except Exception as exc:
-                return {{
-                    "interpretation": f"Gemini API call failed inside Daytona after artifact execution: {{exc}}",
-                    "human_followup": "Inspect Gemini sponsor configuration and rerun the Daytona reproducibility agent."
-                }}
+                return parse_text(text)
+
+            bodies = [
+                {{
+                    "contents": [{{"parts": [{{"text": prompt}}]}}],
+                    "generationConfig": {{"responseMimeType": "application/json"}}
+                }},
+                {{
+                    "contents": [{{"parts": [{{"text": prompt}}]}}]
+                }},
+            ]
+            last_error = None
+            for body in bodies:
+                try:
+                    return call(body)
+                except Exception as exc:
+                    last_error = str(exc)
+
+            return {{
+                "interpretation": f"Gemini API call failed inside Daytona after artifact execution: {{last_error}}",
+                "human_followup": "Inspect Gemini sponsor configuration, model name, and endpoint access, then rerun the Daytona reproducibility agent."
+            }}
 
         gemini = ask_gemini()
         if status == "failed":

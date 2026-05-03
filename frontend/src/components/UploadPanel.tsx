@@ -96,7 +96,7 @@ export default function UploadPanel({
         <input
           className="number-input"
           inputMode="decimal"
-          placeholder="0.87"
+          autoComplete="off"
           value={reportedResult}
           onChange={(event) => onReportedResultChange(event.target.value)}
         />

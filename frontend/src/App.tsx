@@ -6,7 +6,7 @@ import ReviewerPacket from "./components/ReviewerPacket";
 import UploadPanel from "./components/UploadPanel";
 import type { Fixture, RunResult } from "./types";
 
-const API_BASE = import.meta.env.VITE_API_URL ?? "http://127.0.0.1:8000";
+const API_BASE = import.meta.env.VITE_API_URL ?? "";
 
 export default function App() {
   const [fixtures, setFixtures] = useState<Fixture[]>([]);

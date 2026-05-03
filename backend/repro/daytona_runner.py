@@ -247,7 +247,35 @@ def _sandbox_code(payload: dict[str, Any]) -> str:
                     text = "\\n".join(chunks)
                 return parse_text(text)
 
+            response_schema = {{
+                "type": "object",
+                "properties": {{
+                    "interpretation": {{
+                        "type": "string",
+                        "description": "Terse interpretation of the reproducibility receipt.",
+                    }},
+                    "human_followup": {{
+                        "type": "string",
+                        "description": "One concrete reviewer follow-up, without accept/reject language.",
+                    }},
+                }},
+                "required": ["interpretation", "human_followup"],
+                "additionalProperties": False,
+            }}
+
             bodies = [
+                {{
+                    "model": model,
+                    "input": prompt,
+                    "text": {{
+                        "format": {{
+                            "type": "json_schema",
+                            "name": "repro_interpretation",
+                            "strict": True,
+                            "schema": response_schema,
+                        }}
+                    }},
+                }},
                 {{
                     "model": model,
                     "input": prompt,

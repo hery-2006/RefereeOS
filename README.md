@@ -8,11 +8,11 @@ Scientific review is overloaded, and AI-written manuscripts can increase volume 
 
 ## Sponsor Usage
 
-- **AG2:** coordinates the multi-agent workflow. The backend detects the installed AG2 package via `autogen` and creates named AG2 agents when available.
+- **AG2:** performs the optional area-chair synthesis through `autogen.ConversableAgent` when `REFEREEOS_ENABLE_AG2_LLM=true` and a Gemini key is configured. The extraction, checking, and triage stages remain deterministic so the demo is repeatable.
 - **Daytona:** runs the reproducibility probe in an isolated sandbox through the official Daytona Python SDK.
 - **OpenAI GPT-5.5:** interprets the reproducibility receipt inside the Daytona sandbox. The default model is `gpt-5.5` and can be changed with `OPENAI_MODEL`.
 
-If Daytona or OpenAI credentials are not available during local development, RefereeOS uses a clearly labeled local fallback so the dashboard remains demoable.
+If Daytona, OpenAI, or AG2/Gemini credentials are not available during local development, RefereeOS uses clearly labeled deterministic fallbacks so the dashboard remains demoable.
 
 ## Agent Workflow Architecture
 
@@ -23,13 +23,13 @@ flowchart LR
     B --> C["Parser and prompt-injection scanner"]
     C --> D[("Shared evidence board JSON")]
 
-    subgraph AG2["AG2-coordinated agent workflow"]
+    subgraph WORKFLOW["Deterministic review workflow"]
         E["Intake agent extracts paper profile and claims"]
         F["Methods/statistics agent flags design risks"]
         G["Integrity agent records prompt-injection findings"]
         H["Novelty agent attaches related-work risks"]
         I["Reproducibility agent prepares executable probe"]
-        L["Area chair agent synthesizes reviewer packet"]
+        L["Area chair packet synthesis"]
     end
 
     D --> E --> D
@@ -42,6 +42,8 @@ flowchart LR
     J --> K["Run uploaded or fixture metric script"]
     K --> O["OpenAI GPT-5.5 interprets receipt"]
     O --> D
+    D --> N["Optional AG2 + Gemini synthesis"]
+    N --> L
     D --> L --> M["Reviewer packet and dashboard"]
 ```
 
@@ -63,9 +65,13 @@ DAYTONA_API_KEY=...
 OPENAI_API_KEY=...
 OPENAI_MODEL=gpt-5.5
 REFEREEOS_PASS_OPENAI_KEY_TO_DAYTONA=true
+REFEREEOS_ENABLE_AG2_LLM=false
+GEMINI_MODEL=gemini-3.1-pro-preview
+GEMINI_API_KEY=...
 ```
 
 OpenAI keys are not sent into Daytona unless `REFEREEOS_PASS_OPENAI_KEY_TO_DAYTONA=true`.
+AG2/Gemini synthesis is disabled unless `REFEREEOS_ENABLE_AG2_LLM=true`; when disabled or unavailable, the packet uses deterministic area-chair synthesis and labels the fallback in the evidence-board metadata.
 
 ## Run
 
@@ -73,6 +79,12 @@ Terminal 1:
 
 ```powershell
 .\.venv\Scripts\python.exe -m uvicorn backend.app:app --reload --host 127.0.0.1 --port 8000
+```
+
+Equivalent root launcher:
+
+```powershell
+.\.venv\Scripts\python.exe main.py
 ```
 
 Terminal 2:
@@ -83,12 +95,20 @@ npm.cmd --prefix frontend run dev
 
 Open `http://127.0.0.1:5173`.
 
+Before a live sponsor demo, run:
+
+```powershell
+.\.venv\Scripts\python.exe scripts\preflight_demo.py
+```
+
+This verifies that Daytona can run code and that OpenAI GPT-5.5 is reachable from inside the Daytona sandbox.
+
 ## Demo
 
 Primary path:
 
 1. Select **Suspicious/adversarial paper** and run review.
-2. Show the AG2 agent trace, prompt-injection findings, Daytona receipt, GPT-5.5 interpretation, and final reviewer packet.
+2. Show the agent trace, prompt-injection findings, Daytona receipt, GPT-5.5 interpretation, optional AG2/Gemini synthesis, and final reviewer packet.
 3. Switch to **Clean computational paper** to show the control case where the artifact reproduces.
 
 Expected outcomes:
@@ -129,6 +149,7 @@ For custom uploaded scripts, RefereeOS does not run a local fallback. If Daytona
 - Fixture-first flow is hardened; arbitrary PDF extraction is available through PyMuPDF but not deeply section-aware.
 - Related-work search uses canned Semantic Scholar/OpenAlex-style fixtures for offline demo reliability.
 - The local fallback is for development only and is labeled in the reproducibility receipt.
+- AG2/Gemini synthesis is optional and env-gated; deterministic packet generation remains the fallback.
 - The system prepares human review and must not be used as an autonomous publication decision maker.
 
 ## Open-Source Credits

@@ -63,6 +63,8 @@ def build_empty_board(paper: dict[str, Any], metadata: dict[str, Any]) -> dict[s
             "llm_provider": metadata.get("llm_provider", "OpenAI"),
             "llm_model": metadata.get("llm_model"),
             "fixture_id": metadata.get("fixture_id"),
+            "ag2_status": metadata.get("ag2_status"),
+            "ag2_model": metadata.get("ag2_model"),
         },
         "paper": {
             "title": paper["title"],

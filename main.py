@@ -14,27 +14,14 @@ except Exception:
 
 
 def main() -> int:
-    """Small Daytona smoke test without hardcoded credentials."""
-    if not os.getenv("DAYTONA_API_KEY"):
-        print("Set DAYTONA_API_KEY before running this Daytona smoke test.")
-        return 1
+    """Launch the RefereeOS API."""
+    import uvicorn
 
-    from daytona import Daytona
-
-    daytona = Daytona()
-    sandbox = daytona.create()
-    try:
-        response = sandbox.process.code_run('print("Hello World from Daytona!")')
-        if response.exit_code != 0:
-            print(f"Error: {response.exit_code} {response.result}")
-            return response.exit_code
-        print(response.result)
-        return 0
-    finally:
-        try:
-            daytona.delete(sandbox)
-        except Exception:
-            pass
+    host = os.getenv("REFEREEOS_HOST", "127.0.0.1")
+    port = int(os.getenv("REFEREEOS_PORT", "8000"))
+    reload = os.getenv("REFEREEOS_RELOAD", "false").lower() == "true"
+    uvicorn.run("backend.app:app", host=host, port=port, reload=reload)
+    return 0
 
 
 if __name__ == "__main__":

@@ -1,0 +1,4 @@
+class,precision,recall
+stable,0.77,0.75
+risk,0.81,0.78
+unknown,0.74,0.76

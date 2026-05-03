@@ -1,0 +1,4 @@
+class,precision,recall
+T-cell,0.89,0.86
+B-cell,0.86,0.88
+Monocyte,0.88,0.85

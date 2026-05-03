@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 44" role="img" aria-label="RefereeOS">
+  <defs>
+    <style>
+      .mark { font-family: 'Fraunces', Georgia, serif; font-weight: 700; }
+      .word { font-family: 'Fraunces', Georgia, serif; font-weight: 600; font-feature-settings: 'ss01' on, 'liga' on; letter-spacing: -0.01em; }
+    </style>
+  </defs>
+  <g transform="translate(0,0)">
+    <text x="0" y="32" class="mark" font-size="34" fill="#f2c14e">§</text>
+    <text x="28" y="30" class="word" font-size="26" fill="currentColor">RefereeOS</text>
+    <line x1="28" y1="38" x2="200" y2="38" stroke="#f2c14e" stroke-width="1" opacity="0.55"/>
+  </g>
+</svg>

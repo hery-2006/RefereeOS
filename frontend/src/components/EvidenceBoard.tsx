@@ -48,7 +48,7 @@ export default function EvidenceBoard({ board }: Props) {
               <div className="row-list">
                 {board.concerns.map((concern) => (
                   <article key={concern.id} className={`data-row severity-${concern.severity}`}>
-                    <span>{concern.severity}</span>
+                    <span className="severity-dot">{concern.severity}</span>
                     <strong>{concern.category}</strong>
                     <p>{concern.text}</p>
                   </article>

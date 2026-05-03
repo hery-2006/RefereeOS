@@ -68,12 +68,12 @@ export default function App() {
   return (
     <main className="app-shell">
       <header className="topbar">
-        <div>
-          <p className="eyebrow">AG2 + Daytona Review Operations</p>
-          <h1>RefereeOS</h1>
+        <div className="masthead">
+          <img className="wordmark" src="/wordmark.svg" alt="RefereeOS" />
+          <p className="eyebrow">AG2 · Daytona · GPT-5.5 Review Operations</p>
         </div>
         <div className="sponsor-strip" aria-label="Sponsor integration status">
-          <span title="AG2 orchestrates the multi-agent workflow">
+          <span title="AG2 synthesizes the area-chair packet when enabled">
             <BrainCircuit size={16} /> AG2
           </span>
           <span title="Daytona runs the reproducibility sandbox">
@@ -106,7 +106,7 @@ export default function App() {
         <div className="run-summary">
           <div>
             <p className="label">Run</p>
-            <strong>{run?.run_id ?? "standby"}</strong>
+            <strong data-mono>{run?.run_id ?? "standby"}</strong>
           </div>
           <div>
             <p className="label">Triage</p>

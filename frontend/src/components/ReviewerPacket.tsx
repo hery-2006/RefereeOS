@@ -1,4 +1,6 @@
 import { ClipboardCopy, Download } from "lucide-react";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 
 type Props = {
   markdown: string;
@@ -26,6 +28,7 @@ export default function ReviewerPacket({ markdown, runId }: Props) {
       <div className="panel-heading">
         <h2>Reviewer Packet</h2>
         <div className="icon-actions">
+          {runId && <span className="run-badge">Run · {runId}</span>}
           <button title="Copy packet" onClick={copyPacket} disabled={!markdown}>
             <ClipboardCopy size={16} />
           </button>
@@ -34,7 +37,19 @@ export default function ReviewerPacket({ markdown, runId }: Props) {
           </button>
         </div>
       </div>
-      <pre>{markdown || "# RefereeOS Reviewer Packet\n\nRun a fixture to generate the packet."}</pre>
+      {markdown ? (
+        <article className="packet-document">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{markdown}</ReactMarkdown>
+        </article>
+      ) : (
+        <div className="packet-empty">
+          <div className="packet-empty-inner">
+            <div className="mark">§</div>
+            <h3>Awaiting submission</h3>
+            <p>Run a fixture to compose the area-chair packet. The reviewer document renders here when the agents complete.</p>
+          </div>
+        </div>
+      )}
     </section>
   );
 }

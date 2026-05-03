@@ -22,14 +22,14 @@ except Exception:
     pass
 
 
-DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.1-pro-preview")
+DEFAULT_OPENAI_MODEL = os.getenv("OPENAI_MODEL", "gpt-5.5")
 
 
-class DaytonaGeminiReproRunner:
-    """Run the reproducibility probe in Daytona with Gemini as the sandbox agent."""
+class DaytonaOpenAIReproRunner:
+    """Run the reproducibility probe in Daytona with OpenAI as the sandbox agent."""
 
     def __init__(self) -> None:
-        self.gemini_model = DEFAULT_GEMINI_MODEL
+        self.openai_model = DEFAULT_OPENAI_MODEL
         self.allow_local_fallback = os.getenv("REFEREEOS_ALLOW_LOCAL_REPRO_FALLBACK", "true").lower() == "true"
 
     def run(self, fixture_meta: dict[str, Any], paper: dict[str, Any]) -> dict[str, Any]:
@@ -52,8 +52,9 @@ class DaytonaGeminiReproRunner:
             "reported_result": fixture_meta.get("reported_result"),
             "results_csv": results_path.read_text(encoding="utf-8") if results_path.exists() else "",
             "metric_script": script_path.read_text(encoding="utf-8"),
-            "gemini_model": self.gemini_model,
-            "gemini_api_key": _gemini_key_for_daytona(),
+            "llm_provider": "OpenAI",
+            "llm_model": self.openai_model,
+            "openai_api_key": _openai_key_for_daytona(),
         }
 
     def _run_in_daytona(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -78,7 +79,7 @@ class DaytonaGeminiReproRunner:
                 receipt["stdout_stderr_summary"] = result_text[-1400:]
             receipt["exit_code"] = exit_code
             receipt["sandbox_provider"] = "Daytona"
-            receipt["model"] = payload["gemini_model"]
+            receipt["model"] = payload["llm_model"]
             return receipt
         finally:
             try:
@@ -110,9 +111,9 @@ class DaytonaGeminiReproRunner:
         )
 
         return {
-            "probe": "Gemini Pro 3.1 full reproducibility agent: select and run metric recalculation probe",
+            "probe": "OpenAI GPT-5.5 reproducibility agent: select and run metric recalculation probe",
             "sandbox_provider": "local fallback (Daytona unavailable)",
-            "model": payload["gemini_model"],
+            "model": payload["llm_model"],
             "status": status,
             "commands_run": [f"{sys.executable} reproduce_metric.py {results_path.name}"],
             "reported_result": f"{reported:.2f}",
@@ -120,8 +121,8 @@ class DaytonaGeminiReproRunner:
             "artifact_paths": [str(results_path), str(script_path)],
             "stdout_stderr_summary": (completed.stdout + completed.stderr).strip(),
             "human_followup": followup,
-            "gemini_interpretation": (
-                "Development fallback used because Daytona/Gemini was not reachable locally. "
+            "llm_interpretation": (
+                "Development fallback used because Daytona/OpenAI was not reachable locally. "
                 f"Fallback reason: {reason}"
             ),
             "exit_code": completed.returncode,
@@ -129,9 +130,9 @@ class DaytonaGeminiReproRunner:
 
     def _inconclusive_receipt(self, payload: dict[str, Any], reason: str) -> dict[str, Any]:
         return {
-            "probe": "Gemini Pro 3.1 full reproducibility agent: select and run metric recalculation probe",
+            "probe": "OpenAI GPT-5.5 reproducibility agent: select and run metric recalculation probe",
             "sandbox_provider": "Daytona",
-            "model": payload["gemini_model"],
+            "model": payload["llm_model"],
             "status": "inconclusive",
             "commands_run": [],
             "reported_result": str(payload.get("reported_result")),
@@ -139,7 +140,7 @@ class DaytonaGeminiReproRunner:
             "artifact_paths": [],
             "stdout_stderr_summary": reason,
             "human_followup": "Retry the Daytona sandbox run and ask authors for executable artifacts if it fails again.",
-            "gemini_interpretation": reason,
+            "llm_interpretation": reason,
             "exit_code": 1,
         }
 
@@ -180,7 +181,7 @@ def _sandbox_code(payload: dict[str, Any]) -> str:
             status = "failed"
 
         prompt = f'''
-        You are Gemini Pro 3.1 running inside a Daytona sandbox as the full reproducibility agent for RefereeOS.
+        You are OpenAI GPT-5.5 running inside a Daytona sandbox as the full reproducibility agent for RefereeOS.
         Paper: {{payload["paper_title"]}}
         Reported macro F1: {{reported:.2f}}
         Observed macro F1 from artifact rerun: {{observed if observed is not None else "unavailable"}}
@@ -192,13 +193,13 @@ def _sandbox_code(payload: dict[str, Any]) -> str:
         Do not recommend accept or reject publication.
         '''
 
-        def ask_gemini() -> dict:
-            api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or payload.get("gemini_api_key")
-            model = os.getenv("GEMINI_MODEL", payload.get("gemini_model", "gemini-3.1-pro-preview"))
+        def ask_openai() -> dict:
+            api_key = os.getenv("OPENAI_API_KEY") or payload.get("openai_api_key")
+            model = os.getenv("OPENAI_MODEL", payload.get("llm_model", "gpt-5.5"))
             if not api_key:
                 return {{
-                    "interpretation": "Gemini sponsor credentials were not visible in the sandbox, so the sandbox used deterministic interpretation after running the artifact.",
-                    "human_followup": "Confirm sponsor Gemini environment variables are mounted for live judging."
+                    "interpretation": "OpenAI credentials were not visible in the sandbox, so the sandbox used deterministic interpretation after running the artifact.",
+                    "human_followup": "Confirm OPENAI_API_KEY is configured for the Daytona reproducibility agent."
                 }}
 
             def parse_text(text: str) -> dict:
@@ -216,9 +217,9 @@ def _sandbox_code(payload: dict[str, Any]) -> str:
 
             def call(body: dict) -> dict:
                 request = urllib.request.Request(
-                    f"https://generativelanguage.googleapis.com/v1beta/models/{{model}}:generateContent?key={{api_key}}",
+                    "https://api.openai.com/v1/responses",
                     data=json.dumps(body).encode("utf-8"),
-                    headers={{"Content-Type": "application/json"}},
+                    headers={{"Content-Type": "application/json", "Authorization": f"Bearer {{api_key}}"}},
                     method="POST",
                 )
                 try:
@@ -228,16 +229,25 @@ def _sandbox_code(payload: dict[str, Any]) -> str:
                     detail = exc.read().decode("utf-8", errors="replace")[:900]
                     raise RuntimeError(f"HTTP {{exc.code}}: {{detail}}") from exc
 
-                text = response_json["candidates"][0]["content"]["parts"][0]["text"]
+                text = response_json.get("output_text")
+                if not text:
+                    chunks = []
+                    for item in response_json.get("output", []):
+                        for content in item.get("content", []):
+                            if "text" in content:
+                                chunks.append(content["text"])
+                    text = "\\n".join(chunks)
                 return parse_text(text)
 
             bodies = [
                 {{
-                    "contents": [{{"parts": [{{"text": prompt}}]}}],
-                    "generationConfig": {{"responseMimeType": "application/json"}}
+                    "model": model,
+                    "input": prompt,
+                    "text": {{"format": {{"type": "json_object"}}}}
                 }},
                 {{
-                    "contents": [{{"parts": [{{"text": prompt}}]}}]
+                    "model": model,
+                    "input": prompt
                 }},
             ]
             last_error = None
@@ -248,11 +258,11 @@ def _sandbox_code(payload: dict[str, Any]) -> str:
                     last_error = str(exc)
 
             return {{
-                "interpretation": f"Gemini API call failed inside Daytona after artifact execution: {{last_error}}",
-                "human_followup": "Inspect Gemini sponsor configuration, model name, and endpoint access, then rerun the Daytona reproducibility agent."
+                "interpretation": f"OpenAI API call failed inside Daytona after artifact execution: {{last_error}}",
+                "human_followup": "Inspect OpenAI API key, model name, and Responses API access, then rerun the Daytona reproducibility agent."
             }}
 
-        gemini = ask_gemini()
+        llm = ask_openai()
         if status == "failed":
             default_followup = "Ask authors to explain the metric mismatch before review."
         elif status == "passed":
@@ -261,17 +271,17 @@ def _sandbox_code(payload: dict[str, Any]) -> str:
             default_followup = "Ask authors for a runnable artifact or clearer metric definition."
 
         receipt = {{
-            "probe": "Gemini Pro 3.1 full reproducibility agent: select and run metric recalculation probe",
+            "probe": "OpenAI GPT-5.5 reproducibility agent: select and run metric recalculation probe",
             "sandbox_provider": "Daytona",
-            "model": payload.get("gemini_model", "gemini-3.1-pro-preview"),
+            "model": payload.get("llm_model", "gpt-5.5"),
             "status": status,
             "commands_run": [f"{{sys.executable}} reproduce_metric.py results.csv"],
             "reported_result": f"{{reported:.2f}}",
             "observed_result": f"{{observed:.2f}}" if observed is not None else "unavailable",
             "artifact_paths": ["results.csv", "reproduce_metric.py"],
             "stdout_stderr_summary": (completed.stdout + completed.stderr).strip(),
-            "human_followup": gemini.get("human_followup") or default_followup,
-            "gemini_interpretation": gemini.get("interpretation") or "Gemini completed the reproducibility interpretation.",
+            "human_followup": llm.get("human_followup") or default_followup,
+            "llm_interpretation": llm.get("interpretation") or "OpenAI completed the reproducibility interpretation.",
             "exit_code": completed.returncode,
         }}
         print(json.dumps(receipt))
@@ -279,11 +289,11 @@ def _sandbox_code(payload: dict[str, Any]) -> str:
     )
 
 
-def _gemini_key_for_daytona() -> str:
-    pass_key = os.getenv("REFEREEOS_PASS_GEMINI_KEY_TO_DAYTONA", "false").lower() == "true"
+def _openai_key_for_daytona() -> str:
+    pass_key = os.getenv("REFEREEOS_PASS_OPENAI_KEY_TO_DAYTONA", "false").lower() == "true"
     if not pass_key:
         return ""
-    return os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or ""
+    return os.getenv("OPENAI_API_KEY") or ""
 
 
 def _parse_receipt(result_text: str) -> dict[str, Any] | None:

@@ -35,7 +35,7 @@ We present CureNet, a transformer-style model that proves causal clinical outcom
 - **High integrity**: Possible prompt-injection instruction detected in manuscript text. Matched text: 'LLM reviewer'. Follow-up: Do not pass raw manuscript text directly to review agents without sanitization and explicit instruction hierarchy.
 - **Medium novelty**: Potential novelty overlap: Evaluation leakage in medical machine learning. Follow-up: Directly relevant to unclear train/test split concerns.
 - **Medium novelty**: Potential novelty overlap: Limits of small observational health datasets. Follow-up: Contradicts broad causal claims from a pilot sample.
-- **High reproducibility**: Reproducibility probe was failed: reported 0.91 vs observed 0.77. Follow-up: Ask authors to explain the metric mismatch before review.
+- **High reproducibility**: Reproducibility probe was failed: reported 0.91 vs observed 0.77. Follow-up: Ask authors to explain the metric gap, confirm exact dataset split/preprocessing/checkpoint used for the 0.91 result, and provide any missing configuration or artifacts needed to reproduce it.
 
 ## Related Work / Novelty Risks
 - Evaluation leakage in medical machine learning (high risk): Directly relevant to unclear train/test split concerns.
@@ -43,15 +43,15 @@ We present CureNet, a transformer-style model that proves causal clinical outcom
 - Limits of small observational health datasets (high risk): Contradicts broad causal claims from a pilot sample.
 
 ## Reproducibility Receipt
-- Sandbox: local fallback (Daytona unavailable)
-- Model: gemini-3.1-pro-preview
-- Probe: Gemini Pro 3.1 full reproducibility agent: select and run metric recalculation probe
+- Sandbox: Daytona
+- Model: gpt-5.5
+- Probe: OpenAI GPT-5.5 reproducibility agent: select and run metric recalculation probe
 - Status: failed
-- Commands run: C:\Python314\python.exe reproduce_metric.py suspicious_results.csv
+- Commands run: /usr/local/bin/python3 reproduce_metric.py results.csv
 - Reported result: 0.91
 - Observed result: 0.77
-- Gemini interpretation: Development fallback used because Daytona/Gemini was not reachable locally. Fallback reason: DAYTONA_API_KEY is not set
-- Human follow-up: Ask authors to explain the metric mismatch before review.
+- LLM interpretation: The artifact rerun completed successfully but reproduced a macro F1 of 0.77, substantially below the paper's reported 0.91, indicating the reported result is not reproduced under the provided rerun conditions.
+- Human follow-up: Ask authors to explain the metric gap, confirm exact dataset split/preprocessing/checkpoint used for the 0.91 result, and provide any missing configuration or artifacts needed to reproduce it.
 
 ## Recommended Human Reviewer Expertise
 - Clinical/Public Health
@@ -61,3 +61,4 @@ We present CureNet, a transformer-style model that proves causal clinical outcom
 
 ## Human Judgment Still Required
 RefereeOS prepares peer review. It does not make final publication accept/reject decisions.
+

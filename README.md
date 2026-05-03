@@ -10,9 +10,9 @@ Scientific review is overloaded, and AI-written manuscripts can increase volume 
 
 - **AG2:** coordinates the multi-agent workflow. The backend detects the installed AG2 package via `autogen` and creates named AG2 agents when available.
 - **Daytona:** runs the reproducibility probe in an isolated sandbox through the official Daytona Python SDK.
-- **Gemini Pro 3.1:** acts as the full reproducibility agent inside the Daytona sandbox. The default model is `gemini-3.1-pro-preview` and can be changed with `GEMINI_MODEL`.
+- **OpenAI GPT-5.5:** interprets the reproducibility receipt inside the Daytona sandbox. The default model is `gpt-5.5` and can be changed with `OPENAI_MODEL`.
 
-If Daytona or Gemini credentials are not available during local development, RefereeOS uses a clearly labeled local fallback so the dashboard remains demoable.
+If Daytona or OpenAI credentials are not available during local development, RefereeOS uses a clearly labeled local fallback so the dashboard remains demoable.
 
 ## Architecture
 
@@ -27,7 +27,7 @@ flowchart TD
     D --> H[AG2 Novelty Agent]
     D --> I[AG2 Reproducibility Agent]
     I --> J[Daytona Sandbox]
-    J --> K[Gemini Pro 3.1 Repro Agent]
+    J --> K[OpenAI GPT-5.5 Repro Agent]
     K --> D
     D --> L[AG2 Area Chair Agent]
     L --> M[Reviewer Packet]
@@ -49,10 +49,12 @@ Create `.env.local` from `.env.example` and set:
 
 ```txt
 DAYTONA_API_KEY=...
-GEMINI_MODEL=gemini-3.1-pro-preview
+OPENAI_API_KEY=...
+OPENAI_MODEL=gpt-5.5
+REFEREEOS_PASS_OPENAI_KEY_TO_DAYTONA=true
 ```
 
-The hackathon sponsor environment may provide Gemini access inside Daytona. If you need to pass a key explicitly, set `GEMINI_API_KEY`; `GOOGLE_API_KEY` is also supported as an optional alias. Local Gemini keys are not sent into Daytona unless `REFEREEOS_PASS_GEMINI_KEY_TO_DAYTONA=true`.
+OpenAI keys are not sent into Daytona unless `REFEREEOS_PASS_OPENAI_KEY_TO_DAYTONA=true`.
 
 ## Run
 
@@ -73,7 +75,7 @@ Open `http://127.0.0.1:5173`.
 ## Demo
 
 1. Select **Clean computational paper** and run review.
-2. Show AG2 agent trace, evidence board, Daytona/Gemini reproducibility receipt, and final packet.
+2. Show AG2 agent trace, evidence board, Daytona/OpenAI reproducibility receipt, and final packet.
 3. Select **Suspicious/adversarial paper** and run review.
 4. Show prompt-injection finding and failed/inconclusive reproducibility result.
 

@@ -7,7 +7,7 @@ flowchart TD
     C --> D[Evidence Board JSON]
     D --> E[AG2 Agents]
     E --> F[Daytona Repro Sandbox]
-    F --> G[Gemini Pro 3.1]
+    F --> G[OpenAI GPT-5.5]
     G --> D
     D --> H[Area Chair Packet]
     H --> I[React Dashboard]

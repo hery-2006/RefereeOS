@@ -73,8 +73,8 @@ export default function App() {
           <span title="Daytona runs the reproducibility sandbox">
             <FlaskConical size={16} /> Daytona
           </span>
-          <span title="Gemini Pro 3.1 acts as the sandbox reproducibility agent">
-            <ShieldCheck size={16} /> Gemini Pro 3.1
+          <span title="OpenAI GPT-5.5 interprets the Daytona reproducibility receipt">
+            <ShieldCheck size={16} /> GPT-5.5
           </span>
         </div>
       </header>

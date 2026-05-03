@@ -60,7 +60,8 @@ def build_empty_board(paper: dict[str, Any], metadata: dict[str, Any]) -> dict[s
             "project": "RefereeOS",
             "workflow_engine": metadata.get("workflow_engine", "AG2-compatible workflow"),
             "sandbox_provider": metadata.get("sandbox_provider", "Daytona"),
-            "gemini_model": metadata.get("gemini_model"),
+            "llm_provider": metadata.get("llm_provider", "OpenAI"),
+            "llm_model": metadata.get("llm_model"),
             "fixture_id": metadata.get("fixture_id"),
         },
         "paper": {

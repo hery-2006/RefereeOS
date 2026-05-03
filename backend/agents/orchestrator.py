@@ -7,7 +7,7 @@ from typing import Any
 from backend.metadata.related_work import get_related_work
 from backend.parsing.injection_scan import scan_for_prompt_injection
 from backend.parsing.paper_parser import FIXTURES, load_fixture_text, parse_manuscript_text
-from backend.repro.daytona_runner import DaytonaGeminiReproRunner, DEFAULT_GEMINI_MODEL
+from backend.repro.daytona_runner import DaytonaOpenAIReproRunner, DEFAULT_OPENAI_MODEL
 from backend.storage.evidence_board import build_empty_board
 
 
@@ -67,7 +67,8 @@ def analyze_text(
         {
             "workflow_engine": runtime.label,
             "sandbox_provider": "Daytona",
-            "gemini_model": DEFAULT_GEMINI_MODEL,
+            "llm_provider": "OpenAI",
+            "llm_model": DEFAULT_OPENAI_MODEL,
             "fixture_id": fixture_meta.get("fixture_id"),
         },
     )
@@ -79,7 +80,7 @@ def analyze_text(
     _run_step(
         board,
         "reproducibility_agent",
-        "Run Daytona sandbox with Gemini Pro 3.1 as full reproducibility agent",
+        "Run Daytona sandbox with OpenAI GPT-5.5 as reproducibility agent",
         lambda: _reproducibility(board, paper, fixture_meta),
     )
     _run_step(board, "area_chair_agent", "Synthesize reviewer-prep packet", lambda: _area_chair(board))
@@ -206,7 +207,7 @@ def _novelty(board: dict[str, Any], paper: dict[str, Any]) -> None:
 
 
 def _reproducibility(board: dict[str, Any], paper: dict[str, Any], fixture_meta: dict[str, Any]) -> None:
-    receipt = DaytonaGeminiReproRunner().run(fixture_meta, paper)
+    receipt = DaytonaOpenAIReproRunner().run(fixture_meta, paper)
     board["repro_checks"].append(receipt)
 
     status = receipt.get("status")
@@ -302,13 +303,13 @@ def _packet_markdown(board: dict[str, Any], recommendation: str, expertise: list
 
 ## Reproducibility Receipt
 - Sandbox: {repro.get('sandbox_provider', 'Daytona')}
-- Model: {repro.get('model', DEFAULT_GEMINI_MODEL)}
+- Model: {repro.get('model', DEFAULT_OPENAI_MODEL)}
 - Probe: {repro.get('probe', 'Not run')}
 - Status: {repro.get('status', 'not_run')}
 - Commands run: {', '.join(repro.get('commands_run', [])) or 'None'}
 - Reported result: {repro.get('reported_result', 'unknown')}
 - Observed result: {repro.get('observed_result', 'unknown')}
-- Gemini interpretation: {repro.get('gemini_interpretation', 'No interpretation available')}
+- LLM interpretation: {repro.get('llm_interpretation', 'No interpretation available')}
 - Human follow-up: {repro.get('human_followup', 'Human review required')}
 
 ## Recommended Human Reviewer Expertise

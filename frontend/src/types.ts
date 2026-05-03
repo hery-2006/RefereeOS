@@ -48,7 +48,7 @@ export type ReproCheck = {
   artifact_paths: string[];
   stdout_stderr_summary: string;
   human_followup: string;
-  gemini_interpretation: string;
+  llm_interpretation: string;
   exit_code: number;
 };
 
@@ -57,7 +57,8 @@ export type EvidenceBoard = {
     project: string;
     workflow_engine: string;
     sandbox_provider: string;
-    gemini_model: string;
+    llm_provider: string;
+    llm_model: string;
     fixture_id: string;
   };
   paper: {

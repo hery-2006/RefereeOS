@@ -69,7 +69,7 @@ export default function EvidenceBoard({ board }: Props) {
                 </div>
                 <div>
                   <dt>Model</dt>
-                  <dd>{repro?.model ?? board.metadata.gemini_model}</dd>
+                  <dd>{repro?.model ?? board.metadata.llm_model}</dd>
                 </div>
                 <div>
                   <dt>Status</dt>
@@ -82,7 +82,7 @@ export default function EvidenceBoard({ board }: Props) {
                   </dd>
                 </div>
               </dl>
-              {repro?.gemini_interpretation && <p className="receipt-note">{repro.gemini_interpretation}</p>}
+              {repro?.llm_interpretation && <p className="receipt-note">{repro.llm_interpretation}</p>}
             </div>
 
             <div>

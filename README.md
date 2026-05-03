@@ -45,14 +45,14 @@ py -3.13 -m venv .venv
 npm.cmd install --prefix frontend
 ```
 
-Create `.env` from `.env.example` and set:
+Create `.env.local` from `.env.example` and set:
 
 ```txt
 DAYTONA_API_KEY=...
 GEMINI_MODEL=gemini-3.1-pro-preview
 ```
 
-The hackathon sponsor environment may provide Gemini access inside Daytona. If you need to pass a key explicitly, set `GEMINI_API_KEY` or `GOOGLE_API_KEY`.
+The hackathon sponsor environment may provide Gemini access inside Daytona. If you need to pass a key explicitly, set `GEMINI_API_KEY`; `GOOGLE_API_KEY` is also supported as an optional alias. Local Gemini keys are not sent into Daytona unless `REFEREEOS_PASS_GEMINI_KEY_TO_DAYTONA=true`.
 
 ## Run
 

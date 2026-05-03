@@ -3,6 +3,16 @@ from __future__ import annotations
 import os
 
 
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(".env")
+    load_dotenv(".env.local", override=True)
+    load_dotenv(".local.env", override=True)
+except Exception:
+    pass
+
+
 def main() -> int:
     """Small Daytona smoke test without hardcoded credentials."""
     if not os.getenv("DAYTONA_API_KEY"):

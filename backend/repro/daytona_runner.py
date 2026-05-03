@@ -12,6 +12,16 @@ from pathlib import Path
 from typing import Any
 
 
+try:
+    from dotenv import load_dotenv
+
+    load_dotenv(".env")
+    load_dotenv(".env.local", override=True)
+    load_dotenv(".local.env", override=True)
+except Exception:
+    pass
+
+
 DEFAULT_GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.1-pro-preview")
 
 
@@ -43,6 +53,7 @@ class DaytonaGeminiReproRunner:
             "results_csv": results_path.read_text(encoding="utf-8") if results_path.exists() else "",
             "metric_script": script_path.read_text(encoding="utf-8"),
             "gemini_model": self.gemini_model,
+            "gemini_api_key": _gemini_key_for_daytona(),
         }
 
     def _run_in_daytona(self, payload: dict[str, Any]) -> dict[str, Any]:
@@ -181,7 +192,7 @@ def _sandbox_code(payload: dict[str, Any]) -> str:
         '''
 
         def ask_gemini() -> dict:
-            api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+            api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or payload.get("gemini_api_key")
             model = os.getenv("GEMINI_MODEL", payload.get("gemini_model", "gemini-3.1-pro-preview"))
             if not api_key:
                 return {{
@@ -235,6 +246,13 @@ def _sandbox_code(payload: dict[str, Any]) -> str:
         print(json.dumps(receipt))
         """
     )
+
+
+def _gemini_key_for_daytona() -> str:
+    pass_key = os.getenv("REFEREEOS_PASS_GEMINI_KEY_TO_DAYTONA", "false").lower() == "true"
+    if not pass_key:
+        return ""
+    return os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or ""
 
 
 def _parse_receipt(result_text: str) -> dict[str, Any] | None:

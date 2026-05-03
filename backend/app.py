@@ -5,7 +5,9 @@ from typing import Annotated
 try:
     from dotenv import load_dotenv
 
-    load_dotenv()
+    load_dotenv(".env")
+    load_dotenv(".env.local", override=True)
+    load_dotenv(".local.env", override=True)
 except Exception:
     pass
 

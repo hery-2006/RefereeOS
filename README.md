@@ -14,24 +14,35 @@ Scientific review is overloaded, and AI-written manuscripts can increase volume 
 
 If Daytona or OpenAI credentials are not available during local development, RefereeOS uses a clearly labeled local fallback so the dashboard remains demoable.
 
-## Architecture
+## Agent Workflow Architecture
 
 ```mermaid
-flowchart TD
-    A[Fixture or PDF Upload] --> B[FastAPI API]
-    B --> C[Parser + Injection Scanner]
-    C --> D[JSON Evidence Board]
-    D --> E[AG2 Intake Agent]
-    D --> F[AG2 Methods/Stats Agent]
-    D --> G[AG2 Integrity Agent]
-    D --> H[AG2 Novelty Agent]
-    D --> I[AG2 Reproducibility Agent]
-    I --> J[Daytona Sandbox]
-    J --> K[OpenAI GPT-5.5 Repro Agent]
-    K --> D
-    D --> L[AG2 Area Chair Agent]
-    L --> M[Reviewer Packet]
-    M --> N[Vite React Dashboard]
+flowchart LR
+    U["Reviewer or editor"] --> A["Upload manuscript or choose fixture"]
+    A --> B["FastAPI analysis endpoint"]
+    B --> C["Parser and prompt-injection scanner"]
+    C --> D[("Shared evidence board JSON")]
+
+    subgraph AG2["AG2-coordinated agent workflow"]
+        E["Intake agent extracts paper profile and claims"]
+        F["Methods/statistics agent flags design risks"]
+        G["Integrity agent records prompt-injection findings"]
+        H["Novelty agent attaches related-work risks"]
+        I["Reproducibility agent prepares executable probe"]
+        L["Area chair agent synthesizes reviewer packet"]
+    end
+
+    D --> E --> D
+    D --> F --> D
+    D --> G --> D
+    D --> H --> D
+    D --> I
+
+    I --> J["Daytona sandbox"]
+    J --> K["Run uploaded or fixture metric script"]
+    K --> O["OpenAI GPT-5.5 interprets receipt"]
+    O --> D
+    D --> L --> M["Reviewer packet and dashboard"]
 ```
 
 ## Setup
@@ -74,14 +85,20 @@ Open `http://127.0.0.1:5173`.
 
 ## Demo
 
-1. Select **Clean computational paper** and run review.
-2. Show AG2 agent trace, evidence board, Daytona/OpenAI reproducibility receipt, and final packet.
-3. Select **Suspicious/adversarial paper** and run review.
-4. Show prompt-injection finding and failed/inconclusive reproducibility result.
+Primary path:
+
+1. Select **Suspicious/adversarial paper** and run review.
+2. Show the AG2 agent trace, prompt-injection findings, Daytona receipt, GPT-5.5 interpretation, and final reviewer packet.
+3. Switch to **Clean computational paper** to show the control case where the artifact reproduces.
+
+Expected outcomes:
+
+- Clean fixture: `Ready for human review`, reproducibility `passed`, reported `0.87`, observed `0.87`.
+- Suspicious fixture: `Possible integrity issue`, reproducibility `failed`, reported `0.91`, observed about `0.77`.
 
 ## Custom Reproducibility Path
 
-To avoid a fixture-only demo, upload:
+For a non-fixture demo, upload:
 
 - a manuscript: `.pdf`, `.md`, or `.txt`
 - an artifact CSV

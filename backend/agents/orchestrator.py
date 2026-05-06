@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import os
 import re
@@ -7,11 +8,24 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from typing import Any
 
+from dotenv import load_dotenv
+
 from backend.metadata.related_work import get_related_work
 from backend.parsing.injection_scan import scan_for_prompt_injection
 from backend.parsing.paper_parser import FIXTURES, load_fixture_text, parse_manuscript_text
 from backend.repro.daytona_runner import DaytonaOpenAIReproRunner, DEFAULT_OPENAI_MODEL
 from backend.storage.evidence_board import build_empty_board
+
+load_dotenv()
+
+# ── Beta-gate: check if AG2 Beta + DeepSeek is available ───────────────────
+_USE_BETA = os.getenv("REFEREEOS_ENABLE_BETA", "true").lower() == "true"
+_BETA_AVAILABLE = False
+try:
+    from backend.agents.beta_review import beta_analyze as _beta_analyze_fn
+    _BETA_AVAILABLE = True
+except ImportError:
+    pass
 
 
 @dataclass
@@ -24,6 +38,21 @@ class AG2Runtime:
     llm_model: str | None = None
     status: str = "deterministic"
     error: str | None = None
+
+
+def detect_beta_runtime() -> AG2Runtime:
+    """Check if AG2 Beta + DeepSeek is configured and reachable."""
+    agents = [
+        "intake_agent (beta)",
+        "review_specialist (beta)",
+        "synthesis_agent (beta)",
+    ]
+    if not _BETA_AVAILABLE:
+        return AG2Runtime(False, "beta module not importable", "AG2 Beta unavailable (import error)", agents, status="unavailable")
+    if not os.getenv("DEEPSEEK_API_KEY"):
+        return AG2Runtime(True, "beta (no key)", "AG2 Beta installed; missing DEEPSEEK_API_KEY", agents, status="missing_key")
+    model = os.getenv("DEEPSEEK_MODEL", "deepseek-v4-flash")
+    return AG2Runtime(True, "autogen.beta", f"AG2 Beta + DeepSeek {model}", agents, True, model, "ready")
 
 
 def detect_ag2_runtime() -> AG2Runtime:
@@ -85,13 +114,32 @@ def analyze_text(
     fixture_meta: dict[str, Any] | None = None,
     field_domain: str | None = None,
 ) -> dict[str, Any]:
-    runtime = detect_ag2_runtime()
+    """
+    Run the RefereeOS review pipeline.
+
+    Primary path: AG2 Beta (autogen.beta) multi-agent pipeline with DeepSeek.
+    Fallback path: original deterministic pipeline.
+    """
     fixture_meta = fixture_meta or {"fixture_id": "uploaded", **FIXTURES["clean"]}
     paper = parse_manuscript_text(text, source=source)
     if field_domain:
         paper["field_guess"] = field_domain
 
-    board = build_empty_board(
+    beta_runtime = detect_beta_runtime()
+    use_beta = _USE_BETA and beta_runtime.available and beta_runtime.status == "ready"
+
+    if use_beta:
+        try:
+            board = asyncio.run(
+                _beta_analyze_fn(text, source, paper, fixture_meta)
+            )
+            return board
+        except Exception as exc:
+            # Beta failed; fall through to deterministic path
+            print(f"[RefereeOS] Beta pipeline failed: {exc}. Falling back to deterministic path.")
+
+    # ── Deterministic fallback (original) ──
+    runtime = detect_ag2_runtime()
         paper,
         {
             "workflow_engine": runtime.label,

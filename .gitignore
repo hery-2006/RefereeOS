@@ -1,16 +1,10 @@
-.env
-.env.local
-.local.env
+# .gitignore
 .venv/
-.tmp/
 __pycache__/
-**/__pycache__/
-*.py[cod]
-.pytest_cache/
-.mypy_cache/
-dist/
+*.pyc
+.env
 node_modules/
-frontend/dist/
-outputs/local_repro/
-outputs/runs/
-*.log
+dist/
+.vite/
+*.egg-info/
+.DS_Store

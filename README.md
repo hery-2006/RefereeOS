@@ -1,161 +1,201 @@
-# RefereeOS
+# RefereeOS — AG2 Beta Edition
 
-RefereeOS is a multi-agent preprint triage system for scientific editors and reviewers. It converts a manuscript into a structured evidence board, runs specialized review agents, executes one reproducibility probe in a Daytona sandbox, and produces a reviewer packet for human decision-making. It does not make final publication decisions.
+> **Multi-agent preprint triage system powered by AG2 Beta + DeepSeek.**
+>
+> Track: `scientific` | Base: https://github.com/VJDiPaola/RefereeOS | AG2: `0.12.2` (Beta)
 
-## Why It Matters
+---
 
-Scientific review is overloaded, and AI-written manuscripts can increase volume while making weak work look polished. RefereeOS prepares peer review by surfacing claims, evidence, methodological risks, integrity issues, reproducibility receipts, and recommended reviewer expertise before scarce human review time is spent.
+## What it is / 一句话定位
 
-## Sponsor Usage
+**Input:** Scientific manuscript (PDF/MD/TXT) or built-in fixture
+**Output:** Structured reviewer packet with claims, concerns, triage recommendation, and recommended expertise
 
-- **AG2:** performs the optional area-chair synthesis through `autogen.ConversableAgent` when `REFEREEOS_ENABLE_AG2_LLM=true` and a Gemini key is configured. The extraction, checking, and triage stages remain deterministic so the demo is repeatable.
-- **Daytona:** runs the reproducibility probe in an isolated sandbox through the official Daytona Python SDK.
-- **OpenAI GPT-5.5:** interprets the reproducibility receipt inside the Daytona sandbox. The default model is `gpt-5.5` and can be changed with `OPENAI_MODEL`.
+RefereeOS is a multi-agent system that prepares peer review for scientific editors. It converts a manuscript into a structured evidence board using three cooperating AG2 Beta agents — an **Intake Agent** that extracts claims, a **Review Specialist** that assesses methodology/statistics/integrity/novelty, and a **Synthesis Agent** that produces the final reviewer packet. Unlike the original RefereeOS (which used a deterministic pipeline with optional legacy AG2), this version uses `autogen.beta.Agent` with agent-as-tool delegation as the **primary path**, powered by DeepSeek V4 Flash.
 
-If Daytona, OpenAI, or AG2/Gemini credentials are not available during local development, RefereeOS uses clearly labeled deterministic fallbacks so the dashboard remains demoable.
+---
 
-## Agent Workflow Architecture
+## Multi-agent design / 多 agent 架构
 
-```mermaid
-flowchart LR
-    U["Reviewer or editor"] --> A["Upload manuscript or choose fixture"]
-    A --> B["FastAPI analysis endpoint"]
-    B --> C["Parser and prompt-injection scanner"]
-    C --> D[("Shared evidence board JSON")]
-
-    subgraph WORKFLOW["Deterministic review workflow"]
-        E["Intake agent extracts paper profile and claims"]
-        F["Methods/statistics agent flags design risks"]
-        G["Integrity agent records prompt-injection findings"]
-        H["Novelty agent attaches related-work risks"]
-        I["Reproducibility agent prepares executable probe"]
-        L["Area chair packet synthesis"]
-    end
-
-    D --> E --> D
-    D --> F --> D
-    D --> G --> D
-    D --> H --> D
-    D --> I
-
-    I --> J["Daytona sandbox"]
-    J --> K["Run uploaded or fixture metric script"]
-    K --> O["OpenAI GPT-5.5 interprets receipt"]
-    O --> D
-    D --> N["Optional AG2 + Gemini synthesis"]
-    N --> L
-    D --> L --> M["Reviewer packet and dashboard"]
+```
++----------------+      agent-as-tool       +------------------+
+|  Intake Agent  | -----------------------> | Review Specialist|
+|  (Lead)        |    consult_specialist    | (Methods/Stats/  |
+|                |                          |  Integrity/      |
+|                |      agent-as-tool       |  Novelty)        |
+|                | -----------------------> +------------------+
+|                |    request_synthesis           |
++----------------+                                |
+         |                                        |
+         |  reply + JSON                          | reply
+         +----------------------------------------+
+                   |
+                   v
+         +------------------+
+         | Synthesis Agent  |
+         | (Area Chair)     |
+         +------------------+
 ```
 
-## Setup
+| Agent | Role | Model | Tools | Source |
+|-------|------|-------|-------|--------|
+| Intake Agent (Lead) | Extracts claims, delegates to specialist, integrates results | `deepseek-v4-flash` | `consult_specialist`, `request_synthesis` (agent-as-tool) | mine |
+| Review Specialist | Assesses methodology, statistics, integrity, novelty | `deepseek-v4-flash` | (none — called as tool) | adapted from AG2 Beta docs |
+| Synthesis Agent | Produces triage recommendation + reviewer packet | `deepseek-v4-flash` | (none — called as tool) | mine |
 
-Python 3.14 is the first attempt because it is the active interpreter in this workspace. AG2 currently requires Python `>=3.10, <3.14`, so use Python 3.13 if install fails.
+---
 
-```powershell
-py -3.13 -m venv .venv
-.\.venv\Scripts\python.exe -m pip install -U pip
-.\.venv\Scripts\python.exe -m pip install -r requirements.txt
-npm.cmd install --prefix frontend
+## 5-minute setup / 5 分钟跑起来
+
+### Prerequisites
+- Python 3.10–3.14
+- DeepSeek API key (https://platform.deepseek.com)
+- Node.js 18+ (for frontend, optional)
+
+### Quick start
+
+```bash
+# 1. Clone
+git clone https://github.com/hery-2006/RefereeOS
+cd RefereeOS
+
+# 2. Python virtual env
+python -m venv .venv
+# Windows: .venv\Scripts\activate
+source .venv/bin/activate
+
+# 3. Install dependencies
+pip install -r requirements.txt
+
+# 4. Configure DeepSeek
+cp .env.example .env
+# Edit .env — set DEEPSEEK_API_KEY to your key
+# (Already configured if you're using the default .env)
+
+# 5. Run the API
+python main.py
 ```
 
-Create `.env.local` from `.env.example` and set:
+API starts at `http://127.0.0.1:8000`.
 
-```txt
-DAYTONA_API_KEY=...
-OPENAI_API_KEY=...
-OPENAI_MODEL=gpt-5.5
-REFEREEOS_PASS_OPENAI_KEY_TO_DAYTONA=true
-REFEREEOS_ENABLE_AG2_LLM=false
-GEMINI_MODEL=gemini-3.1-pro-preview
-GEMINI_API_KEY=...
-```
+### Frontend (optional)
 
-OpenAI keys are not sent into Daytona unless `REFEREEOS_PASS_OPENAI_KEY_TO_DAYTONA=true`.
-AG2/Gemini synthesis is disabled unless `REFEREEOS_ENABLE_AG2_LLM=true`; when disabled or unavailable, the packet uses deterministic area-chair synthesis and labels the fallback in the evidence-board metadata.
-
-## Run
-
-Terminal 1:
-
-```powershell
-.\.venv\Scripts\python.exe -m uvicorn backend.app:app --reload --host 127.0.0.1 --port 8000
-```
-
-Equivalent root launcher:
-
-```powershell
-.\.venv\Scripts\python.exe main.py
-```
-
-Terminal 2:
-
-```powershell
-npm.cmd --prefix frontend run dev
+```bash
+npm install --prefix frontend
+npm --prefix frontend run dev
 ```
 
 Open `http://127.0.0.1:5173`.
 
-Before a live sponsor demo, run:
+### Expected first-run output
 
-```powershell
-.\.venv\Scripts\python.exe scripts\preflight_demo.py
+```
+INFO:     Started server process [xxxxx]
+INFO:     Waiting for application startup.
+INFO:     Application startup complete.
+INFO:     Uvicorn running on http://127.0.0.1:8000
 ```
 
-This verifies that Daytona can run code and that OpenAI GPT-5.5 is reachable from inside the Daytona sandbox.
+Try: `curl http://127.0.0.1:8000/api/health` → `{"status":"ok","service":"RefereeOS"}`
 
-## Demo
-
-Primary path:
-
-1. Select **Suspicious/adversarial paper** and run review.
-2. Show the agent trace, prompt-injection findings, Daytona receipt, GPT-5.5 interpretation, optional AG2/Gemini synthesis, and final reviewer packet.
-3. Switch to **Clean computational paper** to show the control case where the artifact reproduces.
-
-Expected outcomes:
-
-- Clean fixture: `Ready for human review`, reproducibility `passed`, reported `0.87`, observed `0.87`.
-- Suspicious fixture: `Possible integrity issue`, reproducibility `failed`, reported `0.91`, observed about `0.77`.
-
-## Custom Reproducibility Path
-
-For a non-fixture demo, upload:
-
-- a manuscript: `.pdf`, `.md`, or `.txt`
-- an artifact CSV
-- a Python metric script
-- the reported metric value
-
-The metric script runs inside Daytona and should print one of these patterns:
-
-```txt
-macro_f1=0.87
-metric=0.87
-observed_result=0.87
-```
-
-For custom uploaded scripts, RefereeOS does not run a local fallback. If Daytona fails, the receipt is marked inconclusive instead of executing arbitrary uploaded code locally.
+---
 
 ## API
 
-- `POST /api/analyze`
-- `GET /api/runs/{run_id}`
-- `GET /api/runs/{run_id}/packet`
-- `GET /api/runs/{run_id}/evidence-board`
-- `GET /api/fixtures`
-- `GET /api/health`
+| Path | Method | Description |
+|------|--------|-------------|
+| `/api/analyze` | POST | Submit manuscript for multi-agent review |
+| `/api/runs/{run_id}` | GET | Get run status |
+| `/api/runs/{run_id}/packet` | GET | Get reviewer packet (Markdown) |
+| `/api/runs/{run_id}/evidence-board` | GET | Get structured evidence board |
+| `/api/fixtures` | GET | List built-in fixtures |
+| `/api/health` | GET | Health check |
 
-## Known Limitations
+### Analyze example
 
-- Fixture-first flow is hardened; arbitrary PDF extraction is available through PyMuPDF but not deeply section-aware.
-- Related-work search uses canned Semantic Scholar/OpenAlex-style fixtures for offline demo reliability.
-- The local fallback is for development only and is labeled in the reproducibility receipt.
-- AG2/Gemini synthesis is optional and env-gated; deterministic packet generation remains the fallback.
-- The system prepares human review and must not be used as an autonomous publication decision maker.
+```bash
+curl -X POST http://localhost:8000/api/analyze \
+  -F "fixture_id=clean" \
+  -F "field_domain=machine_learning"
+```
 
-## Open-Source Credits
+---
 
-- AG2: multi-agent framework
-- Daytona: sandbox execution SDK
-- FastAPI and Uvicorn: Python API runtime
-- PyMuPDF: PDF text extraction
-- Vite, React, and Lucide: frontend dashboard
+## Project structure / 项目结构
+
+```
+RefereeOS/
+├── README.md              # This file
+├── AI_LOG.md              # AI-First evidence (required for C5-AG2)
+├── ATTRIBUTION.md         # 拿来主义 evidence (required for C5-AG2)
+├── LICENSE
+├── .env                   # DeepSeek API config
+├── requirements.txt
+├── main.py                # Uvicorn launcher
+├── backend/
+│   ├── app.py             # FastAPI application
+│   ├── agents/
+│   │   ├── __init__.py
+│   │   ├── orchestrator.py    # Routes: Beta primary, deterministic fallback
+│   │   └── beta_review.py     # **NEW** AG2 Beta multi-agent pipeline
+│   ├── parsing/               # Paper parser, injection scan
+│   ├── storage/               # Evidence board store
+│   ├── metadata/              # Related work fixtures
+│   ├── repro/                 # Reproducibility runner (Daytona)
+│   └── fixtures/              # Sample papers
+├── frontend/               # React + Vite dashboard
+└── scripts/                # Utility scripts
+```
+
+---
+
+## Tech stack / 技术栈
+
+- **AG2 Beta** (`autogen.beta.Agent`) — multi-agent framework v0.12.2
+- **DeepSeek V4 Flash** — LLM via OpenAI-compatible API
+- **FastAPI + Uvicorn** — Python API runtime
+- **PyMuPDF** — PDF text extraction
+- **React + Vite + Lucide** — Frontend dashboard
+
+---
+
+## How it compares to original RefereeOS
+
+| Aspect | Original RefereeOS | This fork |
+|--------|-------------------|-----------|
+| AG2 Framework | Legacy `autogen.ConversableAgent` (optional) | **AG2 Beta** `autogen.beta.Agent` (primary) |
+| LLM Provider | Gemini (optional), OpenAI GPT-5.5 | **DeepSeek** (always on) |
+| Agent orchestration | Sequential deterministic pipe (no orchestration) | **agent-as-tool delegation** (3 cooperating agents) |
+| AG2 Beta import | No | **Yes** (+3 Elite20 bonus) |
+| Required API keys | OpenAI + Gemini + Daytona | **DeepSeek only** |
+
+---
+
+## Tests
+
+```bash
+# AG2 Beta pipeline test (uses DeepSeek)
+python -c "import asyncio; from backend.agents.beta_review import beta_analyze; from backend.parsing.paper_parser import load_fixture_text, parse_manuscript_text; text,meta=load_fixture_text('clean'); p=parse_manuscript_text(text,'test'); p['field_guess']='ml'; b=asyncio.run(beta_analyze(text,'test',p,meta)); print('OK:', b['final_packet']['triage_recommendation'])"
+```
+
+---
+
+## Troubleshooting / 常见问题
+
+- **`ModuleNotFoundError: No module named 'autogen.beta'`** — run `pip install "ag2>=0.9"` (beta ships with main package)
+- **`401 Unauthorized` from DeepSeek** — check `DEEPSEEK_API_KEY` in `.env`
+- **`Insufficient Balance`** — top up at https://platform.deepseek.com/
+- **`reasoning_content` error** — the `.env` config disables DeepSeek thinking mode via `extra_body`
+
+---
+
+## License
+
+MIT. See `LICENSE`.
+
+## Acknowledgements
+
+- Vincent DiPaola (VJDiPaola) for the original RefereeOS implementation
+- AG2 team (Qingyun Wu, Chi Wang, contributors) for the multi-agent framework
+- DeepSeek for the LLM API
+- Elite20 C5-AG2 challenge framing
